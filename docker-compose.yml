@@ -1,0 +1,43 @@
+version: '3.6'
+
+services:
+
+  server-bootstrap:
+    image: consul:1.2.1
+    ports:
+      - 8500:8500
+    command: "agent -server -bootstrap-expect 3 -ui -client 0.0.0.0 -bind '{{ GetInterfaceIP \"eth0\" }}'"
+
+  server:
+    image: consul:1.2.1
+    command: "agent -server -retry-join server-bootstrap -client 0.0.0.0 -bind '{{ GetInterfaceIP \"eth0\" }}'"
+    deploy:
+      replicas: 2
+    depends_on:
+      - server-bootstrap
+
+  client:
+    image: consul:1.2.1
+    command: "agent -retry-join server-bootstrap -client 0.0.0.0 -bind '{{ GetInterfaceIP \"eth0\" }}'"
+    deploy:
+      replicas: 2
+    depends_on:
+      - server-bootstrap
+
+  vault:
+    image: vault:0.10.3
+    deploy:
+      replicas: 1
+    ports:
+      - 8200:8200
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+      - VAULT_LOCAL_CONFIG={"backend":{"consul":{"address":"http://server-bootstrap:8500","path":"vault/"}},"listener":{"tcp":{"address":"0.0.0.0:8200","tls_disable":1}},"ui":true, "disable_mlock":true}
+    command: server
+    depends_on:
+      - consul
+
+networks:
+  default:
+    external:
+      name: core

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+echo "Spinning up three droplets..."
+
+for i in 1 2 3; do
+  docker-machine create \
+    --digitalocean-region "nyc1" \
+    --driver digitalocean \
+    --digitalocean-size "8gb" \
+    --digitalocean-access-token $DIGITAL_OCEAN_ACCESS_TOKEN \
+    node-$i;
+done
+
+
+echo "Initializing Swarm mode..."
+
+docker-machine ssh node-1 -- docker swarm init --advertise-addr $(docker-machine ip node-1)
+
+
+echo "Adding the nodes to the Swarm..."
+
+TOKEN=`docker-machine ssh node-1 docker swarm join-token worker | grep token | awk '{ print $5 }'`
+
+for i in 2 3; do
+  docker-machine ssh node-$i \
+    -- docker swarm join --token ${TOKEN} $(docker-machine ip node-1):2377;
+done
+
+
+echo "Creating networking..."
+
+eval $(docker-machine env node-1)
+docker network create -d overlay --attachable core
+
+
+echo "Deploying the stack..."
+
+docker stack deploy --compose-file=docker-compose.yml secrets
