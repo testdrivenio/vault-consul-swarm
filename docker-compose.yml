@@ -1,9 +1,9 @@
-version: '3.7'
+version: "3.8"
 
 services:
-  
+
   vault:
-    image: vault:1.3.5
+    image: vault:1.8.3
     deploy:
       replicas: 1
     ports:
@@ -16,13 +16,13 @@ services:
       - consul
 
   server-bootstrap:
-    image: consul:1.7.2
+    image: consul:1.10.3
     ports:
       - 8500:8500
     command: "agent -server -bootstrap-expect 3 -ui -client 0.0.0.0 -bind '{{ GetInterfaceIP \"eth0\" }}'"
 
   server:
-    image: consul:1.7.2
+    image: consul:1.10.3
     command: "agent -server -retry-join server-bootstrap -client 0.0.0.0 -bind '{{ GetInterfaceIP \"eth0\" }}'"
     deploy:
       replicas: 2
@@ -30,7 +30,7 @@ services:
       - server-bootstrap
 
   client:
-    image: consul:1.7.2
+    image: consul:1.10.3
     command: "agent -retry-join server-bootstrap -client 0.0.0.0 -bind '{{ GetInterfaceIP \"eth0\" }}'"
     deploy:
       replicas: 2
