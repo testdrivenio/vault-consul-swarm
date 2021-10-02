@@ -5,9 +5,10 @@ echo "Spinning up three droplets..."
 
 for i in 1 2 3; do
   docker-machine create \
-    --digitalocean-region "nyc1" \
     --driver digitalocean \
-    --digitalocean-size "8gb" \
+    --digitalocean-region "nyc1" \
+    --digitalocean-image=debian-10-x64 \
+    --engine-install-url "https://releases.rancher.com/install-docker/19.03.9.sh" \
     --digitalocean-access-token $DIGITAL_OCEAN_ACCESS_TOKEN \
     node-$i;
 done
